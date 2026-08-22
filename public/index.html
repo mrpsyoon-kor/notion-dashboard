@@ -287,6 +287,12 @@ function renderCustomers() {
       renderCustomers();
       renderDetail();
       renderWorklogs();
+      // 모바일에서는 상세정보가 목록 아래로 이어지므로, 클릭 즉시 그 위치로 화면을 스크롤해줌
+      if (window.innerWidth <= 640) {
+        setTimeout(() => {
+          document.getElementById("detailPanel").scrollIntoView({ behavior: "smooth", block: "start" });
+        }, 50);
+      }
     };
     list.appendChild(row);
   });
@@ -373,6 +379,9 @@ document.getElementById("closeDetailBtn").onclick = () => {
   renderCustomers();
   renderDetail();
   renderWorklogs();
+  if (window.innerWidth <= 640) {
+    document.getElementById("customerList").scrollIntoView({ behavior: "smooth", block: "start" });
+  }
 };
 document.querySelectorAll(".subtabs .chip").forEach((chip) => {
   chip.onclick = () => {
