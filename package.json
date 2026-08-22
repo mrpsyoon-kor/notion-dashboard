@@ -1,0 +1,13 @@
+{
+  "name": "notion-crm-dashboard",
+  "version": "1.0.0",
+  "description": "노션 고객/작업일지 데이터를 읽어서 보여주는 대시보드",
+  "main": "server.js",
+  "scripts": {
+    "start": "node server.js"
+  },
+  "dependencies": {
+    "express": "^4.19.2",
+    "dotenv": "^16.4.5"
+  }
+}
