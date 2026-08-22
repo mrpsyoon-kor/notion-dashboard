@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8" />
 <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-<title>고객관리 대시보드</title>
+<title>DSIT 고객 관리 대시보드</title>
 <style>
   * { box-sizing: border-box; }
   body {
@@ -46,23 +46,27 @@
     font-size: 12px; cursor: pointer; color: #475569;
   }
   .chip.active { background: #1e293b; color: white; border-color: #1e293b; }
-  .chip.danger.active { background: #dc2626; border-color: #dc2626; }
 
   .grid { display: grid; grid-template-columns: 1.3fr 1fr; gap: 16px; align-items: start; }
   @media (max-width: 860px) { .grid { grid-template-columns: 1fr; } }
 
-  .panel { background: white; border: 1px solid #e2e8f0; border-radius: 12px; overflow: hidden; }
-  .panel h2 { font-size: 14px; padding: 14px 16px; margin: 0; border-bottom: 1px solid #f1f5f9; }
+  .panel { background: white; border: 1px solid #e2e8f0; border-radius: 12px; overflow: hidden; margin-bottom: 16px; }
+  .panel h2 { font-size: 14px; padding: 14px 16px; margin: 0; border-bottom: 1px solid #f1f5f9; display: flex; justify-content: space-between; align-items: center; }
 
   .customer-row { padding: 12px 16px; border-bottom: 1px solid #f1f5f9; cursor: pointer; }
   .customer-row:hover { background: #f8fafc; }
   .customer-row.selected { background: #eff6ff; }
   .cname { font-weight: 600; font-size: 14px; }
   .csub { font-size: 12px; color: #64748b; margin-top: 2px; }
+  .cinfo { font-size: 12px; color: #334155; margin-top: 4px; display: flex; gap: 10px; flex-wrap: wrap; }
+  .cinfo span { background: #f1f5f9; padding: 2px 8px; border-radius: 6px; }
   .badge { display: inline-block; font-size: 11px; padding: 2px 8px; border-radius: 999px; margin-right: 4px; }
-  .badge.dsit { background: #dcfce7; color: #166534; }
   .badge.expiring { background: #fee2e2; color: #b91c1c; }
-  .badge.ended { background: #f1f5f9; color: #64748b; }
+
+  .detail-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; padding: 16px; font-size: 13px; }
+  .detail-grid .d-label { font-size: 11px; color: #94a3b8; margin-bottom: 2px; }
+  .detail-grid .d-value { font-weight: 500; }
+  .detail-grid .full { grid-column: 1 / -1; }
 
   .worklog-item { padding: 12px 16px; border-bottom: 1px solid #f1f5f9; font-size: 13px; }
   .worklog-item .wtop { display: flex; justify-content: space-between; color: #64748b; font-size: 11px; margin-bottom: 4px; }
@@ -70,12 +74,13 @@
 
   .empty { padding: 24px; text-align: center; color: #94a3b8; font-size: 13px; }
   .loading { padding: 40px; text-align: center; color: #94a3b8; }
+  .subtabs { display: flex; gap: 6px; padding: 10px 16px; border-bottom: 1px solid #f1f5f9; }
 </style>
 </head>
 <body>
 
 <header>
-  <h1>고객관리 대시보드 <span class="meta" id="sourceNote">· 노션 데이터 실시간 조회</span></h1>
+  <h1>DSIT 고객 관리 대시보드 <span class="meta">· 노션 데이터 실시간 조회</span></h1>
   <div style="display:flex; align-items:center; gap:10px;">
     <span class="meta" id="lastUpdated"></span>
     <button id="refreshBtn">새로고침</button>
@@ -87,7 +92,7 @@
 
   <div id="content" style="display:none;">
     <div class="kpis">
-      <div class="kpi"><div class="num" id="kpiTotal">-</div><div class="label">전체 고객</div></div>
+      <div class="kpi"><div class="num" id="kpiTotal">-</div><div class="label">DSIT 고객</div></div>
       <div class="kpi warn"><div class="num" id="kpiExpiring">-</div><div class="label">계약만료 30일 이내</div></div>
       <div class="kpi"><div class="num" id="kpiWeek">-</div><div class="label">최근 7일 작업건수</div></div>
       <div class="kpi"><div class="num" id="kpiUnlimited">-</div><div class="label">무제한 요금제</div></div>
@@ -95,20 +100,29 @@
 
     <div class="toolbar">
       <input type="text" id="searchInput" placeholder="업체명, 담당자, 전화번호, 기종 검색" />
-      <button class="chip active" data-filter="all">전체</button>
-      <button class="chip" data-filter="DSIT">DSIT(사용중)</button>
-      <button class="chip" data-filter="판매">판매</button>
-      <button class="chip danger" data-filter="expiring">계약만료임박</button>
     </div>
 
     <div class="grid">
       <div class="panel">
-        <h2>고객 목록 (<span id="customerCount">0</span>)</h2>
+        <h2><span>고객 목록 (<span id="customerCount">0</span>) · 청구일순</span></h2>
         <div id="customerList"></div>
       </div>
-      <div class="panel">
-        <h2 id="worklogTitle">작업일지</h2>
-        <div id="worklogList"></div>
+
+      <div>
+        <div class="panel" id="detailPanel" style="display:none;">
+          <h2 id="detailTitle">고객 상세정보</h2>
+          <div class="detail-grid" id="detailGrid"></div>
+        </div>
+
+        <div class="panel">
+          <h2 id="worklogTitle">작업일지</h2>
+          <div class="subtabs">
+            <button class="chip active" data-range="week">최근 1주</button>
+            <button class="chip" data-range="month">최근 1개월</button>
+            <button class="chip" data-range="all">전체보기</button>
+          </div>
+          <div id="worklogList"></div>
+        </div>
       </div>
     </div>
   </div>
@@ -117,13 +131,16 @@
 <script>
 let allCustomers = [];
 let allWorklogs = [];
-let activeFilter = "all";
 let selectedCustomer = null;
+let worklogRange = "week";
 
 function daysUntil(dateStr) {
   if (!dateStr) return null;
   const diff = (new Date(dateStr) - new Date()) / 86400000;
   return Math.ceil(diff);
+}
+function won(n) {
+  return typeof n === "number" ? n.toLocaleString() + "원" : "-";
 }
 
 async function load(forceRefresh) {
@@ -143,7 +160,7 @@ async function load(forceRefresh) {
   document.getElementById("content").style.display = "block";
   renderKpis();
   renderCustomers();
-  renderWorklogs(null);
+  renderWorklogs();
 }
 
 function renderKpis() {
@@ -156,18 +173,12 @@ function renderKpis() {
   document.getElementById("kpiUnlimited").textContent = allCustomers.filter((c) => c.unlimited).length;
 }
 
-function matchesFilter(c) {
-  if (activeFilter === "all") return true;
-  if (activeFilter === "expiring") { const d = daysUntil(c.contractEnd); return d !== null && d >= 0 && d <= 30; }
-  return c.category === activeFilter;
-}
-
 function renderCustomers() {
   const q = document.getElementById("searchInput").value.trim().toLowerCase();
   const filtered = allCustomers.filter((c) => {
-    const matchesQuery = !q || [c.name, c.contact, c.owner, c.phone, c.model, c.serial]
+    if (!q) return true;
+    return [c.name, c.contact, c.owner, c.phone, c.model, c.serial]
       .some((v) => (v || "").toLowerCase().includes(q));
-    return matchesQuery && matchesFilter(c);
   });
 
   document.getElementById("customerCount").textContent = filtered.length;
@@ -182,41 +193,85 @@ function renderCustomers() {
   filtered.forEach((c) => {
     const d = daysUntil(c.contractEnd);
     const row = document.createElement("div");
-    row.className = "customer-row" + (selectedCustomer === c.name ? " selected" : "");
+    row.className = "customer-row" + (selectedCustomer && selectedCustomer.name === c.name ? " selected" : "");
     row.innerHTML = `
       <div class="cname">${c.name || "(이름 없음)"}</div>
       <div class="csub">${c.model || ""} ${c.phone ? "· " + c.phone : ""} ${c.contact ? "· " + c.contact : ""}</div>
-      <div style="margin-top:6px;">
-        ${c.category === "DSIT" ? '<span class="badge dsit">DSIT</span>' : ""}
-        ${c.category === "계약 종료" ? '<span class="badge ended">계약종료</span>' : ""}
+      <div class="cinfo">
+        <span>청구일 ${c.billingDay || "-"}일</span>
+        <span>${won(c.baseFee)}${c.unlimited ? " (무제한)" : ""}</span>
         ${d !== null && d >= 0 && d <= 30 ? `<span class="badge expiring">만료 ${d}일 전</span>` : ""}
       </div>
     `;
     row.onclick = () => {
-      selectedCustomer = c.name;
+      selectedCustomer = c;
       renderCustomers();
-      renderWorklogs(c.name);
+      renderDetail();
+      renderWorklogs();
     };
     list.appendChild(row);
   });
 }
 
-function renderWorklogs(customerName) {
+function renderDetail() {
+  const panel = document.getElementById("detailPanel");
+  if (!selectedCustomer) { panel.style.display = "none"; return; }
+  panel.style.display = "block";
+  const c = selectedCustomer;
+  document.getElementById("detailTitle").textContent = c.name + " · 상세정보";
+
+  const rows = [
+    ["기종", c.model || "-"],
+    ["S/N", c.serial || "-"],
+    ["설치일자", c.installDate || "-"],
+    ["계약종료일", c.contractEnd || "-"],
+    ["기본요금", won(c.baseFee)],
+    ["보증금", won(c.deposit)],
+    ["무제한 여부", c.unlimited ? "무제한" : "일반"],
+    ["청구일", c.billingDay ? c.billingDay + "일" : "-"],
+    ["월사용매수(흑백)", c.monthlyBw != null ? c.monthlyBw.toLocaleString() + "매" : "-"],
+    ["월사용매수(컬러)", c.monthlyColor != null ? c.monthlyColor.toLocaleString() + "매" : "-"],
+    ["청구방식", (c.billingMethod || []).join(", ") || "-"],
+    ["VAT 여부", c.vatStatus || "-"],
+    ["대표자", c.owner || "-"],
+    ["담당자", c.contact || "-"],
+    ["전화번호", c.phone || "-"],
+    ["이메일", c.email || "-"],
+  ];
+
+  document.getElementById("detailGrid").innerHTML = rows.map(([label, value]) => `
+    <div>
+      <div class="d-label">${label}</div>
+      <div class="d-value">${value}</div>
+    </div>
+  `).join("") + (c.address ? `<div class="full"><div class="d-label">주소</div><div class="d-value">${c.address}</div></div>` : "")
+    + (c.note ? `<div class="full"><div class="d-label">비고</div><div class="d-value">${c.note}</div></div>` : "");
+}
+
+function renderWorklogs() {
   const title = document.getElementById("worklogTitle");
   const list = document.getElementById("worklogList");
 
   let items = allWorklogs.slice().sort((a, b) => (b.date || "").localeCompare(a.date || ""));
-  if (customerName) {
-    title.textContent = customerName + " 작업일지";
-    items = items.filter((w) => w.customerName === customerName);
-  } else {
-    title.textContent = "최근 작업일지 (전체)";
-    items = items.slice(0, 20);
+
+  if (selectedCustomer) {
+    items = items.filter((w) => w.customerName === selectedCustomer.name);
   }
+
+  if (worklogRange === "week") {
+    const cutoff = Date.now() - 7 * 86400000;
+    items = items.filter((w) => w.date && new Date(w.date).getTime() >= cutoff);
+  } else if (worklogRange === "month") {
+    const cutoff = Date.now() - 30 * 86400000;
+    items = items.filter((w) => w.date && new Date(w.date).getTime() >= cutoff);
+  }
+  // "all"은 필터 없음
+
+  title.textContent = selectedCustomer ? selectedCustomer.name + " 작업일지" : "작업일지 (전체 고객)";
 
   list.innerHTML = "";
   if (items.length === 0) {
-    list.innerHTML = '<div class="empty">작업 기록이 없습니다</div>';
+    list.innerHTML = '<div class="empty">해당 기간에 작업 기록이 없습니다</div>';
     return;
   }
 
@@ -235,12 +290,12 @@ function renderWorklogs(customerName) {
 
 document.getElementById("refreshBtn").onclick = () => load(true);
 document.getElementById("searchInput").addEventListener("input", renderCustomers);
-document.querySelectorAll(".chip").forEach((chip) => {
+document.querySelectorAll(".subtabs .chip").forEach((chip) => {
   chip.onclick = () => {
-    document.querySelectorAll(".chip").forEach((c) => c.classList.remove("active"));
+    document.querySelectorAll(".subtabs .chip").forEach((c) => c.classList.remove("active"));
     chip.classList.add("active");
-    activeFilter = chip.dataset.filter;
-    renderCustomers();
+    worklogRange = chip.dataset.range;
+    renderWorklogs();
   };
 });
 
