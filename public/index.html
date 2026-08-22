@@ -9,81 +9,93 @@
   body {
     margin: 0;
     font-family: -apple-system, BlinkMacSystemFont, "Apple SD Gothic Neo", "Malgun Gothic", sans-serif;
-    background: #f8fafc;
+    background: #f1f5f9;
     color: #1e293b;
+    -webkit-font-smoothing: antialiased;
   }
   header {
-    background: white;
-    border-bottom: 1px solid #e2e8f0;
-    padding: 16px 24px;
+    background: #0f172a;
+    color: white;
+    padding: 18px 28px;
     display: flex;
     align-items: center;
     justify-content: space-between;
     flex-wrap: wrap;
-    gap: 8px;
+    gap: 10px;
   }
-  header h1 { font-size: 18px; font-weight: 600; margin: 0; }
+  header h1 { font-size: 19px; font-weight: 700; margin: 0; letter-spacing: -0.01em; }
+  header .sub { font-size: 12px; color: #94a3b8; font-weight: 400; margin-left: 8px; }
   .meta { font-size: 12px; color: #94a3b8; }
   #refreshBtn {
-    background: #1e3a8a; color: white; border: none; padding: 7px 14px;
-    border-radius: 8px; font-size: 13px; cursor: pointer;
+    background: #334155; color: white; border: 1px solid #475569; padding: 8px 16px;
+    border-radius: 8px; font-size: 13px; cursor: pointer; transition: background 0.15s;
   }
-  #refreshBtn:hover { background: #1e40af; }
-  main { max-width: 1200px; margin: 0 auto; padding: 20px; }
+  #refreshBtn:hover { background: #475569; }
+  main { max-width: 1180px; margin: 0 auto; padding: 24px; }
 
-  .kpis { display: grid; grid-template-columns: repeat(auto-fit, minmax(160px, 1fr)); gap: 12px; margin-bottom: 20px; }
-  .kpi { background: white; border: 1px solid #e2e8f0; border-radius: 12px; padding: 16px; }
-  .kpi .num { font-size: 24px; font-weight: 700; }
-  .kpi .label { font-size: 12px; color: #64748b; margin-top: 2px; }
-  .kpi.warn .num { color: #dc2626; }
-
-  .toolbar { display: flex; gap: 8px; flex-wrap: wrap; margin-bottom: 14px; }
+  .toolbar { display: flex; gap: 10px; margin-bottom: 16px; }
   .toolbar input[type="text"] {
-    flex: 1; min-width: 200px; padding: 9px 12px; border: 1px solid #cbd5e1; border-radius: 8px; font-size: 14px;
+    flex: 1; padding: 12px 16px; border: 1px solid #cbd5e1; border-radius: 10px; font-size: 14px;
+    background: white; box-shadow: 0 1px 2px rgba(0,0,0,0.03);
   }
-  .chip {
-    padding: 6px 12px; border-radius: 999px; border: 1px solid #cbd5e1; background: white;
-    font-size: 12px; cursor: pointer; color: #475569;
-  }
-  .chip.active { background: #1e293b; color: white; border-color: #1e293b; }
+  .toolbar input[type="text"]:focus { outline: none; border-color: #334155; }
 
-  .grid { display: grid; grid-template-columns: 1.3fr 1fr; gap: 16px; align-items: start; }
+  .grid { display: grid; grid-template-columns: 1.25fr 1fr; gap: 18px; align-items: start; }
   @media (max-width: 860px) { .grid { grid-template-columns: 1fr; } }
 
-  .panel { background: white; border: 1px solid #e2e8f0; border-radius: 12px; overflow: hidden; margin-bottom: 16px; }
-  .panel h2 { font-size: 14px; padding: 14px 16px; margin: 0; border-bottom: 1px solid #f1f5f9; display: flex; justify-content: space-between; align-items: center; }
+  .panel { background: white; border: 1px solid #e2e8f0; border-radius: 14px; overflow: hidden; margin-bottom: 18px; box-shadow: 0 1px 3px rgba(0,0,0,0.04); }
+  .panel h2 { font-size: 13px; font-weight: 700; color: #475569; padding: 14px 18px; margin: 0; border-bottom: 1px solid #f1f5f9; display: flex; justify-content: space-between; align-items: center; letter-spacing: 0.01em; }
+  .sticky { position: sticky; top: 20px; }
 
-  .customer-row { padding: 12px 16px; border-bottom: 1px solid #f1f5f9; cursor: pointer; }
+  #customerList { max-height: 74vh; overflow-y: auto; }
+
+  .group-header {
+    padding: 8px 18px; font-size: 11px; font-weight: 700; color: #475569;
+    position: sticky; top: 0; z-index: 1; display: flex; align-items: center; gap: 6px;
+  }
+  .group-dot { width: 8px; height: 8px; border-radius: 50%; flex-shrink: 0; }
+
+  .customer-row { padding: 12px 18px 12px 15px; border-bottom: 1px solid #f8fafc; cursor: pointer; border-left: 3px solid transparent; transition: background 0.1s; }
   .customer-row:hover { background: #f8fafc; }
-  .customer-row.selected { background: #eff6ff; }
+  .customer-row.selected { background: #eff6ff; border-left-color: #2563eb; }
   .cname { font-weight: 600; font-size: 14px; }
   .csub { font-size: 12px; color: #64748b; margin-top: 2px; }
-  .cinfo { font-size: 12px; color: #334155; margin-top: 4px; display: flex; gap: 10px; flex-wrap: wrap; }
-  .cinfo span { background: #f1f5f9; padding: 2px 8px; border-radius: 6px; }
-  .badge { display: inline-block; font-size: 11px; padding: 2px 8px; border-radius: 999px; margin-right: 4px; }
-  .badge.expiring { background: #fee2e2; color: #b91c1c; }
+  .cinfo { font-size: 11.5px; color: #334155; margin-top: 6px; display: flex; gap: 6px; flex-wrap: wrap; align-items: center; }
+  .tag { padding: 3px 8px; border-radius: 6px; background: #f1f5f9; }
+  .badge.expiring { background: #fee2e2; color: #b91c1c; padding: 3px 8px; border-radius: 6px; font-weight: 600; }
 
-  .detail-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; padding: 16px; font-size: 13px; }
-  .detail-grid .d-label { font-size: 11px; color: #94a3b8; margin-bottom: 2px; }
-  .detail-grid .d-value { font-weight: 500; }
+  .detail-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 12px 16px; padding: 18px; font-size: 13px; }
+  .detail-grid .d-label { font-size: 11px; color: #94a3b8; margin-bottom: 3px; }
+  .detail-grid .d-value { font-weight: 600; color: #1e293b; }
   .detail-grid .full { grid-column: 1 / -1; }
+  .detail-header { display: flex; justify-content: space-between; align-items: center; }
+  .close-btn { border: none; background: none; color: #94a3b8; font-size: 18px; cursor: pointer; line-height: 1; padding: 4px; }
+  .close-btn:hover { color: #475569; }
 
-  .worklog-item { padding: 12px 16px; border-bottom: 1px solid #f1f5f9; font-size: 13px; }
-  .worklog-item .wtop { display: flex; justify-content: space-between; color: #64748b; font-size: 11px; margin-bottom: 4px; }
-  .worklog-item .wtag { background: #eef2ff; color: #3730a3; padding: 1px 6px; border-radius: 6px; font-size: 11px; margin-right: 4px; }
+  .worklog-item { padding: 12px 18px; border-bottom: 1px solid #f8fafc; font-size: 13px; }
+  .worklog-item .wtop { display: flex; justify-content: space-between; color: #94a3b8; font-size: 11px; margin-bottom: 5px; }
+  .worklog-item .wtag { background: #eef2ff; color: #3730a3; padding: 2px 7px; border-radius: 6px; font-size: 11px; margin-right: 4px; }
 
-  .empty { padding: 24px; text-align: center; color: #94a3b8; font-size: 13px; }
-  .loading { padding: 40px; text-align: center; color: #94a3b8; }
-  .subtabs { display: flex; gap: 6px; padding: 10px 16px; border-bottom: 1px solid #f1f5f9; }
+  .empty { padding: 28px; text-align: center; color: #94a3b8; font-size: 13px; }
+  .loading { padding: 60px; text-align: center; color: #94a3b8; }
+  .subtabs { display: flex; gap: 6px; padding: 10px 14px; border-bottom: 1px solid #f1f5f9; }
+  .chip {
+    padding: 6px 12px; border-radius: 999px; border: 1px solid #e2e8f0; background: white;
+    font-size: 12px; cursor: pointer; color: #64748b; font-weight: 500;
+  }
+  .chip.active { background: #0f172a; color: white; border-color: #0f172a; }
 </style>
 </head>
 <body>
 
 <header>
-  <h1>DSIT 고객 관리 대시보드 <span class="meta">· 노션 데이터 실시간 조회</span></h1>
+  <h1>DSIT 고객 관리 대시보드<span class="sub">노션 데이터 실시간 조회</span></h1>
   <div style="display:flex; align-items:center; gap:10px;">
     <span class="meta" id="lastUpdated"></span>
     <button id="refreshBtn">새로고침</button>
+    <form method="POST" action="/logout" style="margin:0;">
+      <button type="submit" style="background:transparent; border:1px solid #475569; color:#cbd5e1;">로그아웃</button>
+    </form>
   </div>
 </header>
 
@@ -91,13 +103,6 @@
   <div id="loadingState" class="loading">노션에서 데이터를 불러오는 중...</div>
 
   <div id="content" style="display:none;">
-    <div class="kpis">
-      <div class="kpi"><div class="num" id="kpiTotal">-</div><div class="label">DSIT 고객</div></div>
-      <div class="kpi warn"><div class="num" id="kpiExpiring">-</div><div class="label">계약만료 30일 이내</div></div>
-      <div class="kpi"><div class="num" id="kpiWeek">-</div><div class="label">최근 7일 작업건수</div></div>
-      <div class="kpi"><div class="num" id="kpiUnlimited">-</div><div class="label">무제한 요금제</div></div>
-    </div>
-
     <div class="toolbar">
       <input type="text" id="searchInput" placeholder="업체명, 담당자, 전화번호, 기종 검색" />
     </div>
@@ -108,14 +113,17 @@
         <div id="customerList"></div>
       </div>
 
-      <div>
+      <div class="sticky">
         <div class="panel" id="detailPanel" style="display:none;">
-          <h2 id="detailTitle">고객 상세정보</h2>
+          <div class="detail-header">
+            <h2 id="detailTitle" style="border:none; padding-bottom:0;">고객 상세정보</h2>
+            <button class="close-btn" id="closeDetailBtn">✕</button>
+          </div>
           <div class="detail-grid" id="detailGrid"></div>
         </div>
 
         <div class="panel">
-          <h2 id="worklogTitle">작업일지</h2>
+          <h2 id="worklogTitle">작업일지 (전체 고객)</h2>
           <div class="subtabs">
             <button class="chip active" data-range="week">최근 1주</button>
             <button class="chip" data-range="month">최근 1개월</button>
@@ -134,13 +142,35 @@ let allWorklogs = [];
 let selectedCustomer = null;
 let worklogRange = "week";
 
+// 청구일별로 눈에 띄게 구분할 색상 팔레트 (고정 배정 - 같은 날짜는 항상 같은 색)
+const BILLING_COLORS = [
+  "#2563eb", "#d97706", "#059669", "#db2777", "#7c3aed",
+  "#0891b2", "#dc2626", "#65a30d", "#c026d3", "#0d9488",
+];
+function billingColor(day) {
+  const n = parseInt(day, 10);
+  if (isNaN(n)) return "#94a3b8";
+  return BILLING_COLORS[n % BILLING_COLORS.length];
+}
+function tint(hex) {
+  // 연한 배경용 - 그룹 헤더 배경에 사용
+  return hex + "1a";
+}
+
 function daysUntil(dateStr) {
   if (!dateStr) return null;
-  const diff = (new Date(dateStr) - new Date()) / 86400000;
-  return Math.ceil(diff);
+  return Math.ceil((new Date(dateStr) - new Date()) / 86400000);
 }
 function won(n) {
   return typeof n === "number" ? n.toLocaleString() + "원" : "-";
+}
+// 노션 "고객명"(텍스트)과 우리 고객사명이 완전히 똑같지 않아도(줄임말, 오타 등) 서로 포함관계면 매칭
+function nameMatches(a, b) {
+  if (!a || !b) return false;
+  const na = a.replace(/\s+/g, "").toLowerCase();
+  const nb = b.replace(/\s+/g, "").toLowerCase();
+  if (!na || !nb) return false;
+  return na.includes(nb) || nb.includes(na);
 }
 
 async function load(forceRefresh) {
@@ -158,19 +188,8 @@ async function load(forceRefresh) {
     "마지막 갱신: " + new Date(data.fetchedAt).toLocaleString("ko-KR");
   document.getElementById("loadingState").style.display = "none";
   document.getElementById("content").style.display = "block";
-  renderKpis();
   renderCustomers();
   renderWorklogs();
-}
-
-function renderKpis() {
-  document.getElementById("kpiTotal").textContent = allCustomers.length;
-  document.getElementById("kpiExpiring").textContent =
-    allCustomers.filter((c) => { const d = daysUntil(c.contractEnd); return d !== null && d >= 0 && d <= 30; }).length;
-  const weekAgo = Date.now() - 7 * 86400000;
-  document.getElementById("kpiWeek").textContent =
-    allWorklogs.filter((w) => w.date && new Date(w.date).getTime() >= weekAgo).length;
-  document.getElementById("kpiUnlimited").textContent = allCustomers.filter((c) => c.unlimited).length;
 }
 
 function renderCustomers() {
@@ -190,16 +209,33 @@ function renderCustomers() {
     return;
   }
 
+  let lastBillingDay = null;
   filtered.forEach((c) => {
+    const color = billingColor(c.billingDay);
+
+    // 청구일이 바뀌는 지점마다 그룹 헤더를 넣어서 한눈에 구분되게 표시
+    if (c.billingDay !== lastBillingDay) {
+      const gh = document.createElement("div");
+      gh.className = "group-header";
+      gh.style.background = tint(color);
+      gh.style.color = color;
+      gh.innerHTML = `<span class="group-dot" style="background:${color};"></span>매월 ${c.billingDay || "미지정"}일 청구`;
+      list.appendChild(gh);
+      lastBillingDay = c.billingDay;
+    }
+
     const d = daysUntil(c.contractEnd);
     const row = document.createElement("div");
     row.className = "customer-row" + (selectedCustomer && selectedCustomer.name === c.name ? " selected" : "");
+    if (!(selectedCustomer && selectedCustomer.name === c.name)) {
+      row.style.borderLeftColor = color;
+    }
     row.innerHTML = `
       <div class="cname">${c.name || "(이름 없음)"}</div>
       <div class="csub">${c.model || ""} ${c.phone ? "· " + c.phone : ""} ${c.contact ? "· " + c.contact : ""}</div>
       <div class="cinfo">
-        <span>청구일 ${c.billingDay || "-"}일</span>
-        <span>${won(c.baseFee)}${c.unlimited ? " (무제한)" : ""}</span>
+        <span class="tag" style="color:${color};">● ${c.billingDay || "-"}일 청구</span>
+        <span class="tag">${won(c.baseFee)}${c.unlimited ? " · 무제한" : ""}</span>
         ${d !== null && d >= 0 && d <= 30 ? `<span class="badge expiring">만료 ${d}일 전</span>` : ""}
       </div>
     `;
@@ -218,7 +254,7 @@ function renderDetail() {
   if (!selectedCustomer) { panel.style.display = "none"; return; }
   panel.style.display = "block";
   const c = selectedCustomer;
-  document.getElementById("detailTitle").textContent = c.name + " · 상세정보";
+  document.getElementById("detailTitle").textContent = c.name;
 
   const rows = [
     ["기종", c.model || "-"],
@@ -255,7 +291,7 @@ function renderWorklogs() {
   let items = allWorklogs.slice().sort((a, b) => (b.date || "").localeCompare(a.date || ""));
 
   if (selectedCustomer) {
-    items = items.filter((w) => w.customerName === selectedCustomer.name);
+    items = items.filter((w) => nameMatches(w.customerName, selectedCustomer.name));
   }
 
   if (worklogRange === "week") {
@@ -265,7 +301,6 @@ function renderWorklogs() {
     const cutoff = Date.now() - 30 * 86400000;
     items = items.filter((w) => w.date && new Date(w.date).getTime() >= cutoff);
   }
-  // "all"은 필터 없음
 
   title.textContent = selectedCustomer ? selectedCustomer.name + " 작업일지" : "작업일지 (전체 고객)";
 
@@ -281,8 +316,8 @@ function renderWorklogs() {
     div.innerHTML = `
       <div class="wtop"><span>${w.customerName || ""}</span><span>${w.date || ""}</span></div>
       <div>${(w.tasks || []).map((t) => `<span class="wtag">${t}</span>`).join("")} ${w.category ? `<span class="wtag">${w.category}</span>` : ""}</div>
-      ${w.memo ? `<div style="margin-top:4px; color:#475569;">${w.memo}</div>` : ""}
-      ${w.pic ? `<div style="margin-top:4px; color:#94a3b8; font-size:11px;">담당: ${w.pic}</div>` : ""}
+      ${w.memo ? `<div style="margin-top:5px; color:#475569;">${w.memo}</div>` : ""}
+      ${w.pic ? `<div style="margin-top:5px; color:#94a3b8; font-size:11px;">담당: ${w.pic}</div>` : ""}
     `;
     list.appendChild(div);
   });
@@ -290,6 +325,12 @@ function renderWorklogs() {
 
 document.getElementById("refreshBtn").onclick = () => load(true);
 document.getElementById("searchInput").addEventListener("input", renderCustomers);
+document.getElementById("closeDetailBtn").onclick = () => {
+  selectedCustomer = null;
+  renderCustomers();
+  renderDetail();
+  renderWorklogs();
+};
 document.querySelectorAll(".subtabs .chip").forEach((chip) => {
   chip.onclick = () => {
     document.querySelectorAll(".subtabs .chip").forEach((c) => c.classList.remove("active"));

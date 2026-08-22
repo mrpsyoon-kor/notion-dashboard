@@ -1,0 +1,63 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>로그인 · DSIT 고객 관리 대시보드</title>
+<style>
+  * { box-sizing: border-box; }
+  body {
+    margin: 0;
+    min-height: 100vh;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-family: -apple-system, BlinkMacSystemFont, "Apple SD Gothic Neo", "Malgun Gothic", sans-serif;
+    background: #0f172a;
+  }
+  .card {
+    background: white;
+    border-radius: 16px;
+    padding: 36px 32px;
+    width: 100%;
+    max-width: 340px;
+    box-shadow: 0 20px 40px rgba(0,0,0,0.25);
+  }
+  h1 { font-size: 17px; margin: 0 0 4px; color: #0f172a; }
+  p.sub { font-size: 13px; color: #94a3b8; margin: 0 0 24px; }
+  label { font-size: 12px; color: #475569; font-weight: 600; display: block; margin-bottom: 6px; }
+  input {
+    width: 100%; padding: 11px 14px; border: 1px solid #cbd5e1; border-radius: 8px;
+    font-size: 14px; margin-bottom: 16px;
+  }
+  input:focus { outline: none; border-color: #0f172a; }
+  button {
+    width: 100%; padding: 12px; border: none; border-radius: 8px;
+    background: #0f172a; color: white; font-size: 14px; font-weight: 600; cursor: pointer;
+  }
+  button:hover { background: #1e293b; }
+  .error {
+    background: #fee2e2; color: #b91c1c; font-size: 12.5px; padding: 10px 12px;
+    border-radius: 8px; margin-bottom: 16px; display: none;
+  }
+  .error.show { display: block; }
+</style>
+</head>
+<body>
+  <form class="card" method="POST" action="/login">
+    <h1>DSIT 고객 관리 대시보드</h1>
+    <p class="sub">계속하려면 로그인하세요</p>
+    <div class="error" id="errorBox">아이디 또는 비밀번호가 올바르지 않습니다.</div>
+    <label for="username">아이디</label>
+    <input type="text" id="username" name="username" autocomplete="username" required />
+    <label for="password">비밀번호</label>
+    <input type="password" id="password" name="password" autocomplete="current-password" required />
+    <button type="submit">로그인</button>
+  </form>
+  <script>
+    if (new URLSearchParams(location.search).get("error") === "1") {
+      document.getElementById("errorBox").classList.add("show");
+    }
+  </script>
+</body>
+</html>
