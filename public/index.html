@@ -78,6 +78,16 @@
 
   .empty { padding: 28px; text-align: center; color: #94a3b8; font-size: 13px; }
   .loading { padding: 60px; text-align: center; color: #94a3b8; }
+
+  .overdue-item {
+    padding: 12px 18px; border-bottom: 1px solid #fef2f2; display: flex; justify-content: space-between;
+    align-items: center; gap: 10px; cursor: pointer; font-size: 13px;
+  }
+  .overdue-item:hover { background: #fef2f2; }
+  .overdue-days {
+    background: #fee2e2; color: #b91c1c; font-weight: 700; font-size: 12px;
+    padding: 4px 10px; border-radius: 999px; flex-shrink: 0;
+  }
   .subtabs { display: flex; gap: 6px; padding: 10px 14px; border-bottom: 1px solid #f1f5f9; }
   .chip {
     padding: 6px 12px; border-radius: 999px; border: 1px solid #e2e8f0; background: white;
@@ -146,6 +156,14 @@
   <div id="loadingState" class="loading">노션에서 데이터를 불러오는 중...</div>
 
   <div id="content" style="display:none;">
+    <div class="panel" id="overduePanel" style="display:none; border-color:#fecaca;">
+      <h2 style="color:#b91c1c;">
+        <span>⚠ 미입금 현황 · 청구 후 30일 이상 경과 (<span id="overdueCount">0</span>건)</span>
+        <span id="overdueTotal" style="font-weight:600; font-size:12.5px; color:#b91c1c;"></span>
+      </h2>
+      <div id="overdueList"></div>
+    </div>
+
     <div class="toolbar">
       <input type="text" id="searchInput" placeholder="업체명, 담당자, 전화번호, 기종 검색" />
     </div>
@@ -182,6 +200,7 @@
 <script>
 let allCustomers = [];
 let allWorklogs = [];
+let unpaidOverdue = [];
 let selectedCustomer = null;
 let worklogRange = "week";
 
@@ -227,12 +246,58 @@ async function load(forceRefresh) {
   }
   allCustomers = data.customers;
   allWorklogs = data.worklogs;
+  unpaidOverdue = data.unpaidOverdue || [];
   document.getElementById("lastUpdated").textContent =
     "마지막 갱신: " + new Date(data.fetchedAt).toLocaleString("ko-KR");
   document.getElementById("loadingState").style.display = "none";
   document.getElementById("content").style.display = "block";
+  renderOverdue();
   renderCustomers();
   renderWorklogs();
+}
+
+function renderOverdue() {
+  const panel = document.getElementById("overduePanel");
+  if (unpaidOverdue.length === 0) { panel.style.display = "none"; return; }
+  panel.style.display = "block";
+
+  document.getElementById("overdueCount").textContent = unpaidOverdue.length;
+  const total = unpaidOverdue.reduce((sum, b) => sum + (b.baseFee || 0), 0);
+  document.getElementById("overdueTotal").textContent = total > 0 ? "합계 " + won(total) : "";
+
+  const list = document.getElementById("overdueList");
+  list.innerHTML = "";
+  unpaidOverdue.forEach((b) => {
+    const row = document.createElement("div");
+    row.className = "overdue-item";
+    row.innerHTML = `
+      <div>
+        <div style="font-weight:600;">${b.customerName || "(연결된 고객 없음)"}</div>
+        <div style="color:#94a3b8; font-size:11.5px; margin-top:2px;">
+          청구일 ${b.createdAt ? b.createdAt.slice(0, 10) : "-"} · ${b.status || "-"} ${b.customerPhone ? "· " + b.customerPhone : ""}
+        </div>
+      </div>
+      <div style="text-align:right;">
+        <div class="overdue-days">${b.daysOverdue}일 경과</div>
+        ${b.baseFee ? `<div style="margin-top:4px; font-size:12px; color:#475569;">${won(b.baseFee)}</div>` : ""}
+      </div>
+    `;
+    row.onclick = () => {
+      if (!b.customerName) return;
+      const match = allCustomers.find((c) => c.name === b.customerName);
+      if (match) {
+        selectedCustomer = match;
+        document.getElementById("searchInput").value = "";
+        renderCustomers();
+        renderDetail();
+        renderWorklogs();
+        setTimeout(() => {
+          document.getElementById("detailPanel").scrollIntoView({ behavior: "smooth", block: "start" });
+        }, 50);
+      }
+    };
+    list.appendChild(row);
+  });
 }
 
 function renderCustomers() {
