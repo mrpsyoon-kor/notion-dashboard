@@ -2,12 +2,71 @@
 // - 별도 데이터베이스 없음. 노션이 원본(source of truth).
 // - 이 서버는 브라우저가 노션 API에 직접 접근할 수 없어서(인증/CORS) 중간에서 대신 조회해주는 역할만 함.
 // - /public 폴더의 화면(index.html)이 아래 API를 불러서 화면에 그림.
+// - 로그인 없이는 화면/API 둘 다 접근 불가 (세션 쿠키 기반 인증)
 
 const express = require("express");
+const session = require("express-session");
+const path = require("path");
 require("dotenv").config();
 
 const app = express();
-app.use(express.static("public"));
+app.use(express.urlencoded({ extended: true })); // 로그인 폼(form) 데이터 파싱용
+app.use(express.json());
+
+// 로그인 정보는 반드시 환경변수로 설정하세요 (Render > Environment).
+// 아래 값은 환경변수를 깜빡했을 때를 대비한 기본값일 뿐이며, 코드가 공개 저장소에 있다면
+// 반드시 Render Variables에 LOGIN_USERNAME / LOGIN_PASSWORD를 따로 설정해서 이 기본값을 덮어써야 합니다.
+const LOGIN_USERNAME = process.env.LOGIN_USERNAME || "dsit2024";
+const LOGIN_PASSWORD = process.env.LOGIN_PASSWORD || "11111";
+const SESSION_SECRET = process.env.SESSION_SECRET || "dsit-dashboard-please-change-this-secret";
+
+app.use(
+  session({
+    secret: SESSION_SECRET,
+    resave: false,
+    saveUninitialized: false,
+    cookie: {
+      httpOnly: true,
+      maxAge: 8 * 60 * 60 * 1000, // 8시간 유지, 이후엔 재로그인 필요
+    },
+  })
+);
+
+function requireAuth(req, res, next) {
+  if (req.session && req.session.loggedIn) return next();
+  return res.redirect("/login");
+}
+
+// 로그인 화면
+app.get("/login", (req, res) => {
+  res.sendFile(path.join(__dirname, "public", "login.html"));
+});
+
+// 로그인 처리
+app.post("/login", (req, res) => {
+  const { username, password } = req.body;
+  if (username === LOGIN_USERNAME && password === LOGIN_PASSWORD) {
+    req.session.loggedIn = true;
+    return res.redirect("/");
+  }
+  return res.redirect("/login?error=1");
+});
+
+// 로그아웃
+app.post("/logout", (req, res) => {
+  req.session.destroy(() => res.redirect("/login"));
+});
+
+// 대시보드 화면 (로그인 필요)
+app.get("/", requireAuth, (req, res) => {
+  res.sendFile(path.join(__dirname, "public", "index.html"));
+});
+
+// API도 로그인 필요
+app.use("/api", requireAuth);
+
+// 그 외 정적 파일(css/js 등). index.html은 위에서 별도 처리하므로 자동 서빙은 꺼둠
+app.use(express.static("public", { index: false }));
 
 const NOTION_TOKEN = process.env.NOTION_TOKEN;
 const NOTION_VERSION = "2025-09-03";
