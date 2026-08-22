@@ -91,7 +91,7 @@ async function loadData(forceRefresh = false) {
     queryAllPages(WORKLOG_DATA_SOURCE_ID),
   ]);
 
-  const customers = customerPages.map((page) => {
+  const allCustomers = customerPages.map((page) => {
     const p = page.properties;
     return {
       id: page.id,
@@ -113,9 +113,22 @@ async function loadData(forceRefresh = false) {
       monthlyBw: getNumber(p["월 사용매수(흑백)"]),
       monthlyColor: getNumber(p["월 사용매수(컬러)"]),
       billingDay: getSelect(p["청구일"]),
+      billingMethod: getMultiSelect(p["청구방식"]),
+      vatStatus: getSelect(p["VAT 여부"]),
       note: getText(p["비고란"]),
     };
   });
+
+  // 대시보드에는 현재 사용 중인 DSIT 고객만 노출, 청구일(숫자) 오름차순 정렬
+  const customers = allCustomers
+    .filter((c) => c.category === "DSIT")
+    .sort((a, b) => {
+      const da = parseInt(a.billingDay, 10);
+      const db = parseInt(b.billingDay, 10);
+      const va = isNaN(da) ? 999 : da;
+      const vb = isNaN(db) ? 999 : db;
+      return va - vb;
+    });
 
   const worklogs = worklogPages.map((page) => {
     const p = page.properties;
