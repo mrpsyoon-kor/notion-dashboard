@@ -74,6 +74,7 @@ const NOTION_VERSION = "2025-09-03";
 // 노션 데이터소스 ID (워크스페이스에 이미 있는 실제 DB에서 확인한 값)
 const CUSTOMER_DATA_SOURCE_ID = "ba5f6122-d621-4c1a-9dc8-55df939cea33"; // DSIT 고객
 const WORKLOG_DATA_SOURCE_ID = "2df557af-30aa-8169-a2bb-000b0d4f2c9c"; // 현장 업무일지 (N)
+const BILLING_DATA_SOURCE_ID = "1b6557af-30aa-80e8-bfc6-000b36e4e7b5"; // 청구 내역DB
 
 // 노션 응답은 최대 100개씩 페이지네이션 되므로, 전체를 다 가져올 때까지 반복 조회
 async function queryAllPages(dataSourceId) {
@@ -134,9 +135,12 @@ function getCheckbox(prop) {
 function getPhone(prop) {
   return prop?.phone_number || "";
 }
+function getRelationIds(prop) {
+  return (prop?.relation || []).map((r) => r.id);
+}
 
 // 5분 캐시 - 매번 노션에 요청하면 느리고 API 한도에 걸릴 수 있어서 잠깐 저장해둠
-let cache = { customers: null, worklogs: null, fetchedAt: 0 };
+let cache = { customers: null, worklogs: null, unpaidOverdue: null, fetchedAt: 0 };
 const CACHE_MS = 5 * 60 * 1000;
 
 async function loadData(forceRefresh = false) {
@@ -145,9 +149,10 @@ async function loadData(forceRefresh = false) {
     return cache;
   }
 
-  const [customerPages, worklogPages] = await Promise.all([
+  const [customerPages, worklogPages, billingPages] = await Promise.all([
     queryAllPages(CUSTOMER_DATA_SOURCE_ID),
     queryAllPages(WORKLOG_DATA_SOURCE_ID),
+    queryAllPages(BILLING_DATA_SOURCE_ID),
   ]);
 
   const allCustomers = customerPages.map((page) => {
@@ -205,7 +210,39 @@ async function loadData(forceRefresh = false) {
     };
   });
 
-  cache = { customers, worklogs, fetchedAt: Date.now() };
+  // 고객 ID -> 고객정보 매핑 (청구내역의 "DSIT 고객" 관계연결로 고객을 찾기 위함).
+  // 미입금 현황은 지금 DSIT로 분류된 고객뿐 아니라, 과거 청구건이라면 분류가 바뀐 고객도 나올 수 있어 전체(allCustomers) 기준으로 매핑.
+  const customerById = new Map(allCustomers.map((c) => [c.id, c]));
+
+  const ONE_DAY_MS = 24 * 60 * 60 * 1000;
+  const now = Date.now();
+
+  const billingRecords = billingPages.map((page) => {
+    const p = page.properties;
+    const relatedIds = getRelationIds(p["DSIT 고객"]);
+    const customer = relatedIds.length > 0 ? customerById.get(relatedIds[0]) : null;
+    return {
+      id: page.id,
+      url: page.url,
+      createdAt: page.created_time, // 실제 "청구일" 필드가 거의 비어있어, 청구건이 생성된 날짜를 청구일 대용으로 사용
+      status: getStatus(p["청구 상태"]),
+      paid: getCheckbox(p["입금 완료"]),
+      customerId: relatedIds[0] || null,
+      customerName: customer ? customer.name : null,
+      customerPhone: customer ? customer.phone : null,
+      customerContact: customer ? customer.contact : null,
+      baseFee: customer ? customer.baseFee : null,
+    };
+  });
+
+  // 입금 미완료 + 청구(생성)일로부터 30일 이상 경과한 건만 추림
+  const unpaidOverdue = billingRecords
+    .filter((b) => !b.paid && b.createdAt)
+    .map((b) => ({ ...b, daysOverdue: Math.floor((now - new Date(b.createdAt).getTime()) / ONE_DAY_MS) }))
+    .filter((b) => b.daysOverdue >= 30)
+    .sort((a, b) => b.daysOverdue - a.daysOverdue);
+
+  cache = { customers, worklogs, unpaidOverdue, fetchedAt: Date.now() };
   return cache;
 }
 
@@ -216,7 +253,7 @@ app.get("/api/dashboard", async (req, res) => {
     }
     const forceRefresh = req.query.refresh === "1";
     const data = await loadData(forceRefresh);
-    res.json({ customers: data.customers, worklogs: data.worklogs, fetchedAt: data.fetchedAt });
+    res.json({ customers: data.customers, worklogs: data.worklogs, unpaidOverdue: data.unpaidOverdue, fetchedAt: data.fetchedAt });
   } catch (err) {
     console.error(err);
     res.status(500).json({ error: err.message });
