@@ -1,0 +1,219 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>견적서 생성 · DSIT 고객 관리 대시보드</title>
+<style>
+  * { box-sizing: border-box; }
+  body {
+    margin: 0;
+    font-family: -apple-system, BlinkMacSystemFont, "Apple SD Gothic Neo", "Malgun Gothic", sans-serif;
+    background: #f1f5f9;
+    color: #1e293b;
+  }
+  header {
+    background: #0f172a; color: white; padding: 18px 28px;
+    display: flex; align-items: center; justify-content: space-between; flex-wrap: wrap; gap: 10px;
+  }
+  header h1 { font-size: 18px; font-weight: 700; margin: 0; }
+  header a { color: #cbd5e1; text-decoration: none; font-size: 13px; border: 1px solid #475569; padding: 8px 14px; border-radius: 8px; }
+  header a:hover { background: #334155; }
+
+  main { max-width: 900px; margin: 0 auto; padding: 24px; }
+  .panel { background: white; border: 1px solid #e2e8f0; border-radius: 14px; padding: 22px; box-shadow: 0 1px 3px rgba(0,0,0,0.04); }
+
+  label { font-size: 12px; font-weight: 600; color: #475569; display: block; margin-bottom: 6px; }
+  input[type="text"], input[type="number"] {
+    width: 100%; padding: 10px 12px; border: 1px solid #cbd5e1; border-radius: 8px; font-size: 14px;
+  }
+  input:focus { outline: none; border-color: #0f172a; }
+
+  .field-row { margin-bottom: 18px; max-width: 320px; }
+
+  table { width: 100%; border-collapse: collapse; margin-top: 6px; }
+  th { font-size: 11.5px; color: #94a3b8; text-align: left; padding: 6px 6px; font-weight: 600; }
+  td { padding: 4px; vertical-align: top; }
+  td input { font-size: 13.5px; padding: 8px 10px; }
+  .col-item { width: 34%; }
+  .col-qty { width: 12%; }
+  .col-price { width: 18%; }
+  .col-amount { width: 16%; }
+  .col-note { width: 20%; }
+  .row-amount { padding: 8px 10px; font-size: 13.5px; color: #475569; background: #f8fafc; border-radius: 8px; text-align: right; }
+
+  .add-row-btn {
+    margin-top: 10px; padding: 8px 14px; border: 1px dashed #cbd5e1; border-radius: 8px;
+    background: white; color: #475569; font-size: 13px; cursor: pointer;
+  }
+  .add-row-btn:hover { background: #f8fafc; }
+
+  .summary {
+    margin-top: 20px; padding-top: 16px; border-top: 1px solid #f1f5f9;
+    display: flex; justify-content: flex-end; gap: 28px; font-size: 14px;
+  }
+  .summary .label { color: #94a3b8; font-size: 12px; }
+  .summary .value { font-weight: 700; font-size: 16px; }
+
+  .generate-btn {
+    margin-top: 20px; width: 100%; padding: 14px; border: none; border-radius: 10px;
+    background: #0f172a; color: white; font-size: 15px; font-weight: 700; cursor: pointer;
+  }
+  .generate-btn:hover { background: #1e293b; }
+  .generate-btn:disabled { background: #cbd5e1; cursor: not-allowed; }
+
+  .status-msg { margin-top: 12px; font-size: 13px; padding: 10px 14px; border-radius: 8px; display: none; }
+  .status-msg.error { display: block; background: #fee2e2; color: #b91c1c; }
+  .status-msg.success { display: block; background: #dcfce7; color: #166534; }
+
+  .hint { font-size: 12px; color: #94a3b8; margin-top: -10px; margin-bottom: 18px; }
+</style>
+</head>
+<body>
+
+<header>
+  <h1>견적서 생성</h1>
+  <a href="/">← 대시보드로 돌아가기</a>
+</header>
+
+<main>
+  <div class="panel">
+    <div class="field-row">
+      <label for="customerName">고객명 (선택 · 파일명에만 쓰입니다)</label>
+      <input type="text" id="customerName" placeholder="예) 대성건설(주)" />
+    </div>
+    <p class="hint">품목·수량·단가만 입력하면 됩니다. No.·총액·합계는 엑셀이 자동으로 계산합니다. (최대 10개 품목)</p>
+
+    <table>
+      <thead>
+        <tr>
+          <th class="col-item">품목</th>
+          <th class="col-qty">수량</th>
+          <th class="col-price">단가</th>
+          <th class="col-amount">총액</th>
+          <th class="col-note">비고</th>
+        </tr>
+      </thead>
+      <tbody id="itemRows"></tbody>
+    </table>
+
+    <button type="button" class="add-row-btn" id="addRowBtn">+ 품목 추가</button>
+
+    <div class="summary">
+      <div><div class="label">총 공급가액</div><div class="value" id="totalAmount">0원</div></div>
+    </div>
+
+    <button type="button" class="generate-btn" id="generateBtn">견적서 다운로드</button>
+    <div class="status-msg" id="statusMsg"></div>
+  </div>
+</main>
+
+<script>
+const MAX_ROWS = 10;
+let rowCount = 0;
+
+function won(n) {
+  return (n || 0).toLocaleString() + "원";
+}
+
+function addRow(prefill) {
+  if (rowCount >= MAX_ROWS) return;
+  rowCount++;
+  const tbody = document.getElementById("itemRows");
+  const tr = document.createElement("tr");
+  tr.innerHTML = `
+    <td><input type="text" class="f-item" placeholder="예) CRG-069 C,M" value="${prefill?.item || ""}" /></td>
+    <td><input type="number" class="f-qty" min="0" value="${prefill?.qty ?? ""}" /></td>
+    <td><input type="number" class="f-price" min="0" value="${prefill?.unitPrice ?? ""}" /></td>
+    <td><div class="row-amount f-rowtotal">0원</div></td>
+    <td><input type="text" class="f-note" value="${prefill?.note || ""}" /></td>
+  `;
+  tbody.appendChild(tr);
+
+  tr.querySelectorAll(".f-qty, .f-price").forEach((el) => el.addEventListener("input", recalc));
+  recalc();
+}
+
+function recalc() {
+  let total = 0;
+  document.querySelectorAll("#itemRows tr").forEach((tr) => {
+    const qty = Number(tr.querySelector(".f-qty").value) || 0;
+    const price = Number(tr.querySelector(".f-price").value) || 0;
+    const amount = qty * price;
+    tr.querySelector(".f-rowtotal").textContent = won(amount);
+    total += amount;
+  });
+  document.getElementById("totalAmount").textContent = won(total);
+  document.getElementById("addRowBtn").style.display = rowCount >= MAX_ROWS ? "none" : "inline-block";
+}
+
+document.getElementById("addRowBtn").addEventListener("click", () => addRow());
+
+document.getElementById("generateBtn").addEventListener("click", async () => {
+  const statusMsg = document.getElementById("statusMsg");
+  statusMsg.className = "status-msg";
+  statusMsg.textContent = "";
+
+  const items = [];
+  document.querySelectorAll("#itemRows tr").forEach((tr) => {
+    const item = tr.querySelector(".f-item").value.trim();
+    const qty = tr.querySelector(".f-qty").value;
+    const unitPrice = tr.querySelector(".f-price").value;
+    const note = tr.querySelector(".f-note").value.trim();
+    if (item) items.push({ item, qty, unitPrice, note });
+  });
+
+  if (items.length === 0) {
+    statusMsg.className = "status-msg error";
+    statusMsg.textContent = "품목을 최소 1개 이상 입력해주세요.";
+    return;
+  }
+
+  const btn = document.getElementById("generateBtn");
+  btn.disabled = true;
+  btn.textContent = "생성 중...";
+
+  try {
+    const res = await fetch("/api/quote/generate", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ customerName: document.getElementById("customerName").value.trim(), items }),
+    });
+
+    if (!res.ok) {
+      const err = await res.json().catch(() => ({}));
+      throw new Error(err.error || "생성에 실패했습니다.");
+    }
+
+    const blob = await res.blob();
+    const disposition = res.headers.get("Content-Disposition") || "";
+    const match = disposition.match(/filename="?([^"]+)"?/);
+    const filename = match ? decodeURIComponent(match[1]) : "견적서.xlsx";
+
+    const url = window.URL.createObjectURL(blob);
+    const a = document.createElement("a");
+    a.href = url;
+    a.download = filename;
+    document.body.appendChild(a);
+    a.click();
+    a.remove();
+    window.URL.revokeObjectURL(url);
+
+    statusMsg.className = "status-msg success";
+    statusMsg.textContent = "견적서가 생성되어 다운로드되었습니다.";
+  } catch (err) {
+    statusMsg.className = "status-msg error";
+    statusMsg.textContent = "오류: " + err.message;
+  } finally {
+    btn.disabled = false;
+    btn.textContent = "견적서 다운로드";
+  }
+});
+
+// 시작할 때 기본 3줄 표시
+addRow();
+addRow();
+addRow();
+</script>
+</body>
+</html>

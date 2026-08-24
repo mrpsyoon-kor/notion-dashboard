@@ -105,7 +105,7 @@
     header h1 { font-size: 16px; display: flex; flex-direction: column; gap: 2px; }
     header .sub { margin-left: 0; }
     header > div { width: 100%; justify-content: space-between; }
-    #refreshBtn, .logout-btn {
+    #refreshBtn, .logout-btn, #quoteLink {
       padding: 10px 14px; font-size: 13px; min-height: 40px;
     }
 
@@ -145,6 +145,7 @@
   <h1>DSIT 고객 관리 대시보드<span class="sub" id="headerSub">노션 데이터 실시간 조회</span></h1>
   <div style="display:flex; align-items:center; gap:10px;">
     <span class="meta" id="lastUpdated"></span>
+    <a href="/quote" id="quoteLink" style="color:#cbd5e1; text-decoration:none; font-size:13px; border:1px solid #475569; padding:8px 14px; border-radius:8px;">견적서 생성</a>
     <button id="refreshBtn">새로고침</button>
     <form method="POST" action="/logout" style="margin:0;">
       <button type="submit" class="logout-btn" style="background:transparent; border:1px solid #475569; color:#cbd5e1;">로그아웃</button>
