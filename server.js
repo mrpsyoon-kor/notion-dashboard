@@ -84,6 +84,10 @@ app.post("/api/quote/generate", requireAuth, async (req, res) => {
     const templatePath = path.join(__dirname, "templates", "견적서_Template.xlsx");
     const workbook = new ExcelJS.Workbook();
     await workbook.xlsx.readFile(templatePath);
+    // 엑셀에서 파일을 열 때 (저장된 캐시값 대신) 모든 수식을 강제로 다시 계산하도록 지정.
+    // 이게 없으면 TODAY() 같은 날짜 수식이 예전에 저장했던 값 그대로 보일 수 있음.
+    workbook.calcProperties = workbook.calcProperties || {};
+    workbook.calcProperties.fullCalcOnLoad = true;
     const sheet = workbook.worksheets[0];
 
     // 템플릿의 품목 입력 영역은 14행부터 시작 (No./총액은 이미 수식으로 자동 계산됨)
