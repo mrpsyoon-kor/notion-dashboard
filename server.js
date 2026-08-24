@@ -7,6 +7,7 @@
 const express = require("express");
 const session = require("express-session");
 const path = require("path");
+const ExcelJS = require("exceljs");
 require("dotenv").config();
 
 const app = express();
@@ -60,6 +61,54 @@ app.post("/logout", (req, res) => {
 // 대시보드 화면 (로그인 필요)
 app.get("/", requireAuth, (req, res) => {
   res.sendFile(path.join(__dirname, "public", "index.html"));
+});
+
+// 견적서 생성 화면 (로그인 필요)
+app.get("/quote", requireAuth, (req, res) => {
+  res.sendFile(path.join(__dirname, "public", "quote.html"));
+});
+
+// 견적서 생성 - 업로드된 원본 엑셀 템플릿(견적서_Template.xlsx)의 빈 칸(품목/수량/단가/비고)만 채워서
+// 그대로 돌려줌. 번호/총액/합계는 템플릿에 이미 있는 수식이 그대로 계산해줌(직접 계산해서 넣지 않음).
+app.post("/api/quote/generate", requireAuth, async (req, res) => {
+  try {
+    const { customerName, items } = req.body;
+
+    if (!Array.isArray(items) || items.length === 0) {
+      return res.status(400).json({ error: "품목을 1개 이상 입력해주세요." });
+    }
+    if (items.length > 10) {
+      return res.status(400).json({ error: "이 템플릿은 품목을 최대 10개까지만 담을 수 있습니다." });
+    }
+
+    const templatePath = path.join(__dirname, "templates", "견적서_Template.xlsx");
+    const workbook = new ExcelJS.Workbook();
+    await workbook.xlsx.readFile(templatePath);
+    const sheet = workbook.worksheets[0];
+
+    // 템플릿의 품목 입력 영역은 14행부터 시작 (No./총액은 이미 수식으로 자동 계산됨)
+    for (let i = 0; i < 10; i++) {
+      const row = 14 + i;
+      const it = items[i];
+      sheet.getCell(`C${row}`).value = it ? (it.item || "") : "";
+      sheet.getCell(`D${row}`).value = it && it.qty !== "" ? Number(it.qty) : null;
+      sheet.getCell(`E${row}`).value = it && it.unitPrice !== "" ? Number(it.unitPrice) : null;
+      sheet.getCell(`G${row}`).value = it ? (it.note || "") : "";
+    }
+
+    const buffer = await workbook.xlsx.writeBuffer();
+
+    const todayStr = new Date().toISOString().slice(0, 10);
+    const safeCustomer = (customerName || "고객").replace(/[\\/:*?"<>|]/g, "").trim() || "고객";
+    const filename = `견적서_${safeCustomer}_${todayStr}.xlsx`;
+
+    res.setHeader("Content-Type", "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet");
+    res.setHeader("Content-Disposition", `attachment; filename="${encodeURIComponent(filename)}"`);
+    res.send(Buffer.from(buffer));
+  } catch (err) {
+    console.error("견적서 생성 실패:", err);
+    res.status(500).json({ error: "견적서 생성 중 오류가 발생했습니다: " + err.message });
+  }
 });
 
 // API도 로그인 필요
